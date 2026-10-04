@@ -1,0 +1,25 @@
+
+# secrets
+.env
+.env.local
+*.env
+!.env.example
+!.env.development
+
+# python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# node
+node_modules/
+dist/
+.DS_Store
+
+/backend/.env
+/backend/.env.*
+!/backend/.env.example
+/backend/.venv/
+/backend/venv/
+/backend/__pycache__/
