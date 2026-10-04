@@ -12,6 +12,33 @@ Creozen GenAI retrieves relevant passages from a research-paper collection and g
 - **Backend Health:** https://creozen-genai-project.onrender.com/health
 - **GitHub Repository:** https://github.com/RupeshO7a/creozen-genai-project
 
+## Research Dataset
+
+Creozen GenAI uses five PDF research papers as its knowledge base for Retrieval-Augmented Generation (RAG).
+
+### Research Papers
+
+| No. | Research Paper | PDF Link |
+|---|---|---|
+| 1 | Research Paper 1 | [View PDF](https://arxiv.org/pdf/1908.10084) |
+| 2 | Research Paper 2 | [View PDF](https://arxiv.org/pdf/1810.04805) |
+| 3 | Research Paper 3 | [View PDF](https://arxiv.org/pdf/2005.11401) |
+| 4 | Research Paper 4 | [View PDF](https://arxiv.org/pdf/1706.03762) |
+| 5 | Research Paper 5 | [View PDF](https://arxiv.org/pdf/2312.11805) |
+
+### Dataset Processing
+
+The research papers are used in the RAG pipeline:
+
+1. Extract text from the PDF documents.
+2. Split the extracted text into smaller chunks.
+3. Generate 1024-dimensional embeddings using Cloudflare Workers AI.
+4. Store document chunks and embeddings in Supabase PostgreSQL with pgvector.
+5. Retrieve relevant passages using vector similarity search.
+6. Pass the retrieved context to the configured OpenRouter language model.
+7. Generate context-grounded answers with supporting source references where available.
+
+
 ---
 
 ## 1. Project Overview
