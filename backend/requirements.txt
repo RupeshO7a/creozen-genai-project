@@ -2,7 +2,8 @@
 fastapi
 uvicorn[standard]
 python-dotenv
-google-genai
+openai
+ollama
 supabase
 pypdf
 pydantic

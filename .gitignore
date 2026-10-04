@@ -1,25 +1,26 @@
 
-# secrets
+# Secrets and environment variables
 .env
-.env.local
+.env.*
 *.env
 !.env.example
-!.env.development
 
-# python
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 venv/
 .venv/
+backend/.venv/
+backend/venv/
+backend/__pycache__/
 
-# node
+# Node.js and build output
 node_modules/
 dist/
-.DS_Store
 
-/backend/.env
-/backend/.env.*
-!/backend/.env.example
-/backend/.venv/
-/backend/venv/
-/backend/__pycache__/
+# OS files
+.DS_Store
+Thumbs.db
+
+# Research-paper PDFs
+backend/data/
