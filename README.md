@@ -1,382 +1,479 @@
 
 # Creozen GenAI — AI Research Paper Assistant
 
-Creozen GenAI is an AI-powered research assistant that helps users explore research papers, understand technical concepts, and retrieve relevant information from a document knowledge base. It combines a large language model (LLM), retrieval-augmented generation (RAG), and an agent-based tool-calling workflow to generate context-aware answers grounded in retrieved research passages.
+**An AI-powered research assistant that answers questions about scientific papers using Retrieval-Augmented Generation (RAG).**
 
-## Live Demo
+Creozen GenAI retrieves relevant passages from a research-paper collection and generates context-grounded answers with supporting source references.
 
-- **Frontend:** [Add your deployed frontend URL](https://your-frontend-url.example.com)
-- **Backend API:** [Add your deployed backend URL](https://your-backend-url.example.com)
-- **API Documentation:** `https://your-backend-url.example.com/docs`
+## Live Links
 
-> Replace these example URLs with your actual deployment links once the application is live.
+- **Frontend:** https://creozen-genai-project.vercel.app
+- **Backend API:** https://creozen-genai-project.onrender.com
+- **Backend Health:** https://creozen-genai-project.onrender.com/health
+- **GitHub Repository:** https://github.com/RupeshO7a/creozen-genai-project
 
-## Project Overview
+---
 
-Creozen GenAI separates the user interface, backend intelligence, and data storage into distinct layers.
+## 1. Project Overview
 
-- **Frontend:** Provides the chat interface, displays answers and research sources, and communicates with the backend through REST APIs.
-- **Backend:** Handles API requests, LLM calls, RAG retrieval, agent orchestration, and application business logic.
-- **Database and Vector Store:** Supabase stores application data and research-paper chunks with embeddings. Vector similarity search retrieves passages relevant to a user's question.
+Research papers contain valuable technical information, but finding specific insights across lengthy documents can be time-consuming. Creozen GenAI allows users to ask natural-language questions and receive answers grounded in retrieved research content.
 
-The application uses Ollama models during local development:
-- **LLM:** `qwen2.5:7b`
-- **Embedding model:** `nomic-embed-text`
-- **Backend framework:** FastAPI
-- **Frontend framework:** React with Vite
+### Key Features
 
-## Architecture
+- AI-powered research assistance
+- Retrieval-Augmented Generation (RAG)
+- Semantic search using vector embeddings
+- Context-grounded LLM responses
+- Supporting source references
+- REST API architecture
+- Chat history persistence using Supabase
+- Independently deployed frontend and backend
+- Environment-based configuration for sensitive credentials
 
-The application follows a three-layer architecture: presentation, application logic, and data storage.
+## 2. System Architecture
+
+The application follows a three-layer architecture: Frontend, Backend, and Database. External AI services provide embeddings and language-model inference.
 
 ```mermaid
 flowchart TB
     U["User"] --> FE
 
-    subgraph L1["Layer 1 — Frontend"]
+    subgraph FRONTEND["Layer 1: Frontend"]
         FE["React + Vite UI"]
-        CHAT["Chat Interface"]
-        FE --> CHAT
     end
 
-    subgraph L2["Layer 2 — Backend"]
+    subgraph BACKEND["Layer 2: Backend"]
         API["FastAPI REST API"]
-        AGENT["Agent Orchestration"]
-        RAG["RAG Retrieval Pipeline"]
-        LLM["LLM Service — Qwen 2.5"]
-        EMB["Embedding Service — Nomic"]
+        AGENT["Agent / RAG Pipeline"]
+        RET["Document Retrieval"]
+        EMB["Embedding Generation"]
+        LLM["LLM Response Generation"]
+
         API --> AGENT
-        AGENT --> RAG
+        AGENT --> RET
+        RET --> EMB
         AGENT --> LLM
-        RAG --> EMB
     end
 
-    subgraph L3["Layer 3 — Data"]
-        DB[("Supabase")]
-        CHUNKS["Research Paper Chunks"]
-        VECTORS["Vector Embeddings"]
-        HISTORY["Chat History"]
-        DB --> CHUNKS
-        DB --> VECTORS
-        DB --> HISTORY
+    subgraph DATABASE["Layer 3: Database"]
+        DB[("Supabase PostgreSQL")]
+        VEC[("pgvector Embedding Store")]
+        HIST[("Chat History")]
+
+        DB --- VEC
+        DB --- HIST
     end
 
-    CHAT -->|"HTTPS REST: POST /chat"| API
-    RAG -->|"Vector similarity search"| DB
-    DB -->|"Relevant passages and metadata"| RAG
-    RAG -->|"Retrieved context"| AGENT
-    AGENT -->|"Prompt + context"| LLM
-    LLM -->|"Generated answer"| AGENT
-    AGENT -->|"Answer, sources, tool steps"| API
-    API -->|"JSON response"| CHAT
+    subgraph SERVICES["External AI Services"]
+        CF["Cloudflare Workers AI"]
+        OR["OpenRouter LLM API"]
+    end
+
+    FE <-->|"HTTPS / JSON"| API
+    EMB --> CF
+    LLM --> OR
+    RET <-->|"Vector Similarity Search"| VEC
+    API <-->|"Read / Write"| HIST
 ```
 
-### Request and Data Flow
+### Layer 1 — Frontend
 
-1. The user submits a research question through the React chat interface.
-2. The frontend sends the question to the FastAPI backend using `POST /chat`.
-3. The agent determines when to use the `search_documents` tool.
-4. The RAG pipeline converts the query into an embedding using the configured embedding model.
-5. Supabase performs vector similarity search to retrieve relevant research-paper passages.
-6. The agent supplies the retrieved context to the LLM to generate an answer.
-7. The backend returns the answer, source information, and agent tool steps as JSON.
-8. The frontend displays the answer and its available research sources.
+**Technologies:** React, Vite, JavaScript, CSS
 
-## Technology Stack
+Responsibilities:
+
+- Display the research assistant interface.
+- Accept user questions.
+- Send requests to the backend REST API.
+- Display answers and source references.
+- Manage user-interface state.
+
+**Deployment:** Vercel
+
+The frontend uses `VITE_API_URL` to identify the backend. Private AI service credentials and database keys are not placed in frontend code.
+
+### Layer 2 — Backend
+
+**Technologies:** Python, FastAPI, RAG, agent orchestration
+
+Responsibilities:
+
+- Expose REST API endpoints.
+- Receive research questions.
+- Generate query embeddings.
+- Retrieve relevant research-paper passages.
+- Coordinate retrieval and response generation.
+- Call the configured LLM service.
+- Return answers, sources, and processing information.
+- Store and retrieve chat history.
+
+**Deployment:** Render
+
+The backend manages private credentials through environment variables.
+
+### Layer 3 — Database
+
+**Technologies:** Supabase PostgreSQL, pgvector
+
+Responsibilities:
+
+- Store research-document chunks.
+- Store vector embeddings.
+- Perform semantic similarity searches.
+- Persist chat history.
+
+### External AI Services
+
+- **Cloudflare Workers AI:** Generates query embeddings using `@cf/qwen/qwen3-embedding-0.6b`.
+- **OpenRouter:** Provides language-model inference through the configured `OPENROUTER_MODEL`.
+
+These services are called by the backend rather than directly by the browser.
+
+## 3. Technology Stack
 
 | Component | Technology |
 |---|---|
-| Frontend | React, Vite, JavaScript, CSS |
-| Backend | Python, FastAPI |
-| LLM | Ollama, Qwen 2.5 7B |
-| Embeddings | Nomic Embed Text |
-| Database | Supabase |
-| Retrieval | Vector similarity search |
-| API communication | REST, JSON |
-| Local development | Node.js, npm, Python virtual environment |
-| Version control | Git, GitHub |
+| Frontend | React, Vite, JavaScript |
+| Backend | Python, FastAPI, Uvicorn |
+| AI Architecture | Retrieval-Augmented Generation (RAG) |
+| Agent Logic | Python application modules |
+| Database | Supabase PostgreSQL |
+| Vector Search | pgvector, PostgreSQL RPC |
+| Embeddings | Cloudflare Workers AI |
+| LLM Inference | OpenRouter |
+| Frontend Hosting | Vercel |
+| Backend Hosting | Render |
+| Version Control | Git, GitHub |
 
-## Project Structure
+## 4. Repository Structure
 
 ```text
 creozen-genai-project/
 ├── backend/
 │   ├── main.py
-│   ├── agent.py
-│   ├── rag.py
-│   ├── tools.py
 │   ├── llm.py
-│   ├── db.py
+│   ├── rag.py
+│   ├── agent.py
+│   ├── tools.py
 │   ├── requirements.txt
 │   ├── .env.example
-│   └── .env
+│   └── ...
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx
-│   │   └── App.css
+│   ├── public/
 │   ├── package.json
 │   ├── .env.example
-│   └── .env.development
+│   └── ...
 ├── .gitignore
 └── README.md
 ```
 
-> The structure above is representative of the current project. Adjust filenames if your repository differs. Actual `.env` files containing secrets must not be committed.
+The frontend and backend are maintained in separate folders within the same Git repository.
 
-## Getting Started
+## 5. Request and Data Flow
 
-### Prerequisites
+1. The user submits a question through the React frontend.
+2. The frontend sends an HTTP request to the FastAPI backend.
+3. The backend generates an embedding for the question using Cloudflare Workers AI.
+4. The retrieval module searches Supabase for relevant document chunks.
+5. The agent combines the question with the retrieved context.
+6. The backend sends the prepared request to the configured OpenRouter model.
+7. The backend returns the answer and supporting source information.
+8. The frontend displays the response.
+9. Chat history is stored in Supabase when the relevant backend operation succeeds.
+
+## 6. Prerequisites
 
 Install the following before running the project locally:
 
-- Python 3.11 or another Python version supported by your dependencies
+- Python 3.11 or a version compatible with the backend dependencies
 - Node.js and npm
 - Git
 - A Supabase project with the required tables and vector-search function
-- Ollama, with the required models downloaded
+- A Cloudflare account with Workers AI access
+- An OpenRouter API key
 
-### 1. Clone the Repository
+Valid credentials are required for the complete AI workflow.
+
+## 7. Local Installation and Setup
+
+### Step 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/creozen-genai-project.git
+git clone https://github.com/RupeshO7a/creozen-genai-project.git
 cd creozen-genai-project
 ```
 
-Replace `YOUR_GITHUB_USERNAME` with your GitHub username.
+### Step 2 — Set Up the Backend
 
-### 2. Configure Ollama
-
-Install Ollama from [ollama.com](https://ollama.com/) and download the models used by the local application:
-
-```bash
-ollama pull qwen2.5:7b
-ollama pull nomic-embed-text
-```
-
-Ensure Ollama is running before starting the backend.
-
-### 3. Configure the Backend
-
-Open a terminal in the project root:
-
-```bash
+```powershell
 cd backend
 python -m venv venv
-```
-
-Activate the virtual environment.
-
-**Windows PowerShell:**
-
-```powershell
 .\venv\Scripts\Activate.ps1
-```
-
-**macOS/Linux:**
-
-```bash
-source venv/bin/activate
-```
-
-Install the dependencies:
-
-```bash
 pip install -r requirements.txt
-```
-
-Create a local environment file from the example:
-
-**Windows PowerShell:**
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-**macOS/Linux:**
+Open `backend/.env` and replace the placeholders with your actual credentials.
 
-```bash
-cp .env.example .env
+```env
+# Supabase
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+
+# OpenRouter
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=openrouter/free
+
+# Cloudflare Workers AI
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+CLOUDFLARE_EMBED_MODEL=@cf/qwen/qwen3-embedding-0.6b
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-Fill in the environment variables required by your backend, including your Supabase URL and appropriate Supabase key, plus any model configuration your implementation requires.
-
-Start the API server:
+Start the backend:
 
 ```bash
 python -m uvicorn main:app --reload --port 8000
 ```
 
-The backend should be available at:
+Backend endpoints:
 
-- API base URL: `http://localhost:8000`
-- Interactive API documentation: `http://localhost:8000/docs`
+- API root: http://localhost:8000/
+- Health check: http://localhost:8000/health
+- Interactive API documentation: http://localhost:8000/docs
 
-### 4. Configure the Frontend
+The API documentation is available if it is enabled in the FastAPI application.
 
-Open another terminal:
+### Step 3 — Set Up the Frontend
 
-```bash
-cd frontend
-npm install
-```
-
-Create your frontend environment file.
-
-**Windows PowerShell:**
+Open a second terminal from the repository root.
 
 ```powershell
+cd frontend
+npm install
 Copy-Item .env.example .env.development
 ```
 
-**macOS/Linux:**
-
-```bash
-cp .env.example .env.development
-```
-
-Configure the backend API URL:
+Set the following in `frontend/.env.development`:
 
 ```env
 VITE_API_URL=http://localhost:8000
 ```
 
-Start the development server:
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173` or another available port.
+Open the local URL printed by Vite, usually:
 
-## Environment Variables
+http://localhost:5173
 
-Keep credentials in environment variables instead of hardcoding them in source code.
+Ensure the backend's `ALLOWED_ORIGINS` contains the exact frontend origin.
 
-### Backend — `backend/.env.example`
+## 8. Environment Variables
 
-Use the variable names expected by your actual backend implementation.
+### Backend Variables
 
-```env
-SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-SUPABASE_KEY=YOUR_SUPABASE_KEY
-OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL=qwen2.5:7b
-EMBEDDING_MODEL=nomic-embed-text
-```
+| Variable | Purpose |
+|---|---|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_KEY` | Backend database credential |
+| `OPENROUTER_API_KEY` | OpenRouter authentication |
+| `OPENROUTER_MODEL` | Configured LLM model |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Workers AI authentication |
+| `CLOUDFLARE_EMBED_MODEL` | Embedding model identifier |
+| `ALLOWED_ORIGINS` | Comma-separated allowed frontend origins |
 
-This is a template, not a guarantee that every variable name matches the current backend. Verify the names in `db.py`, `llm.py`, and other configuration code before using it.
+### Frontend Variables
 
-### Frontend — `frontend/.env.example`
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Base URL of the FastAPI backend |
 
-```env
-VITE_API_URL=http://localhost:8000
-```
+**Security:** Vite exposes variables prefixed with `VITE_` to browser code. Only public configuration values, such as the backend URL, should use this prefix. Never place API keys, database passwords, or service-role credentials in frontend variables.
 
-Only non-secret frontend configuration should use the `VITE_` prefix. Frontend variables are exposed to the browser after the application is built.
+## 9. Database and Vector Search
 
-### Security Guidelines
+The application uses Supabase PostgreSQL for application data and pgvector for semantic retrieval.
 
-- Never commit `.env` files containing real credentials.
-- Add `.env`, `.env.*` and other secret-bearing files to `.gitignore`, while explicitly allowing safe `.env.example` files.
-- Never expose a Supabase service-role key in the frontend.
-- Use HTTPS for production API requests.
-- Restrict backend CORS to the actual frontend origin.
-- Keep production secrets in the deployment provider's environment-variable settings.
+The database must contain the expected research-document chunks, compatible embeddings, and the PostgreSQL RPC function required by the backend.
 
-## API Reference
+The configured Cloudflare embedding model produces 1024-dimensional embeddings. The database vector column and retrieval function must support the same dimension.
 
-### `POST /chat`
+Important requirements:
 
-Submit a question to the research assistant.
+- Configure the Supabase URL and credentials.
+- Ensure the PostgreSQL vector extension and required tables exist.
+- Ensure the vector-search RPC function matches the backend's expected name and parameters.
+- Ensure stored embeddings are compatible with the configured embedding model.
+- Configure the chat-history table if chat history persistence is enabled.
 
-**Example request:**
+Preserve existing database data when changing the vector schema or embedding configuration.
 
-```json
-{
-  "session_id": "example-session-id",
-  "message": "How does self-attention work in the Transformer architecture?"
-}
-```
+## 10. Deployment
 
-**Example response shape:**
+### Frontend Deployment — Vercel
 
-```json
-{
-  "answer": "The generated research-based answer...",
-  "sources": [
-    {
-      "source": "1706.03762v7.pdf",
-      "page": 5
-    }
-  ],
-  "steps": [
-    {
-      "tool": "search_documents",
-      "args": {
-        "query": "Transformer self-attention"
-      }
-    }
-  ]
-}
-```
-
-The response values above are illustrative. Actual fields and source metadata depend on the backend response and retrieved documents.
-
-## Deployment
-
-The frontend and backend should be deployed separately.
-
-### Frontend
-
-Deploy the React/Vite application using a static frontend host such as:
-
-- [Vercel](https://vercel.com/)
-- [Netlify](https://www.netlify.com/)
-
-Configure the production environment variable:
+1. Import the GitHub repository into Vercel.
+2. Set the root directory to `frontend`.
+3. Select Vite as the framework preset.
+4. Set the install command to `npm install`.
+5. Set the build command to `npm run build`.
+6. Set the output directory to `dist`.
+7. Add the following environment variable:
 
 ```env
-VITE_API_URL=https://YOUR_DEPLOYED_BACKEND_URL
+VITE_API_URL=https://creozen-genai-project.onrender.com
 ```
 
-### Backend
+8. Deploy the project.
 
-Deploy FastAPI to a Python-compatible hosting service. Configure the required environment variables and ensure the backend can reach both Supabase and the configured model service.
+**Live frontend:** https://creozen-genai-project.vercel.app
 
-**Important:** A cloud backend cannot use Ollama on your personal computer automatically. For production, run Ollama on a reachable server with suitable compute resources, or adapt the LLM integration to use a hosted inference provider.
+### Backend Deployment — Render
 
-Configure CORS to allow requests from your deployed frontend origin.
+1. Create a Web Service connected to the GitHub repository.
+2. Set the root directory to `backend`.
+3. Set the build command:
 
-### Post-Deployment Verification
+```bash
+pip install -r requirements.txt
+```
 
-- [ ] Frontend loads successfully over HTTPS.
-- [ ] Backend health or API endpoint responds.
-- [ ] Frontend can send a question to `POST /chat`.
-- [ ] RAG retrieves relevant passages from Supabase.
-- [ ] The answer is grounded in the retrieved context.
-- [ ] Sources and page numbers appear correctly.
-- [ ] Unsupported questions do not produce fabricated source claims.
-- [ ] Secrets are configured on the server and are not exposed to the browser.
+4. Set the start command:
 
-## Current Limitations
+```bash
+uvicorn main:app --host 0.0.0.0 --port $PORT
+```
 
-- Answer quality depends on the relevance and quality of indexed research-paper passages.
-- The LLM and embedding services must be available for retrieval and generation.
-- Production model hosting, API security, and deployment configuration must be completed and verified before public release.
+5. Add all required backend environment variables in Render.
+6. Set `ALLOWED_ORIGINS` to the deployed frontend origin:
 
-## Future Improvements
+```env
+ALLOWED_ORIGINS=https://creozen-genai-project.vercel.app
+```
 
-- Document upload and indexing interface
-- Improved retrieval ranking and source attribution
-- Streaming responses
-- Automated RAG evaluation tests
-- Authentication and user-specific chat history
-- Production monitoring, logging, and rate limiting
+7. Deploy and review the service logs.
 
-## Contributing
+**Live backend:** https://creozen-genai-project.onrender.com
 
-Contributions, bug reports, and suggestions are welcome. Open an issue or submit a pull request with a clear description of the change.
+**Health endpoint:** https://creozen-genai-project.onrender.com/health
 
-## License
+Redeploy after changing environment variables when required so the running application uses the updated configuration.
 
-Add your chosen open-source license here before distributing the project publicly.
+> Render free-tier services may sleep after periods of inactivity, so the first request may take longer.
+
+## 11. Git and Version Control
+
+Frontend and backend source code are maintained in the same Git repository in separate folders.
+
+**Repository:** https://github.com/RupeshO7a/creozen-genai-project
+
+Typical Git workflow:
+
+```bash
+git status
+git add .
+git commit -m "Describe the changes"
+git push origin main
+```
+
+Use meaningful commits to document progress, such as:
+
+- `Add backend database and AI agent modules`
+- `Implement vector retrieval pipeline`
+- `Add research assistant frontend`
+- `Prepare application for deployment`
+- `Fix missing backend dependency`
+
+Before committing, verify that `.gitignore` excludes:
+
+- `.env` files containing real credentials
+- Python virtual environments
+- `node_modules`
+- Build output
+- Private research documents and other local-only data
+
+Keep `.env.example` files in Git with placeholder values only.
+
+## 12. Secret Management
+
+The application separates configuration from source code through environment variables.
+
+- Store local backend credentials in `backend/.env`.
+- Configure production backend credentials in Render.
+- Configure only public frontend variables in Vercel.
+- Keep `.env.example` files free of real secrets.
+- Never commit API keys, database credentials, or service-role keys.
+- Rotate any credential that is accidentally exposed.
+
+## 13. Troubleshooting
+
+### Frontend Displays "Failed to fetch"
+
+- Confirm the Render backend is running.
+- Verify `VITE_API_URL` points to the correct Render backend URL.
+- Confirm Render's `ALLOWED_ORIGINS` includes the exact Vercel frontend origin.
+- Redeploy the frontend after changing environment variables.
+- Inspect the browser developer console and network requests.
+
+### Backend Returns an Error
+
+- Review Render deployment and runtime logs.
+- Verify all required environment variables are set.
+- Check Supabase connectivity and database permissions.
+- Verify Cloudflare and OpenRouter credentials and service availability.
+
+### Retrieval Returns No Relevant Results
+
+- Confirm research-document chunks exist in Supabase.
+- Check that embedding dimensions are compatible.
+- Verify the vector-search RPC function and parameters.
+- Ensure query and document embeddings use compatible representations.
+
+### Application Works Locally but Not in Production
+
+- Compare local and production environment variable names.
+- Confirm the latest code is deployed.
+- Check CORS settings and production logs.
+- Verify the database and external AI service configuration.
+
+## 14. Future Improvements
+
+Potential enhancements include:
+
+- Uploading and processing research papers through the interface
+- Supporting multiple research-paper collections
+- Improving citation accuracy and source previews
+- Adding user authentication and personalized sessions
+- Introducing streaming responses
+- Adding automated tests and continuous integration
+- Improving observability and retrieval evaluation
+
+## 15. Project Goals
+
+Creozen GenAI demonstrates a modular AI application architecture that separates the user interface, backend processing, and persistent storage.
+
+The project aims to:
+
+- Make research papers easier to explore.
+- Generate answers grounded in retrieved research context.
+- Keep model inference and database operations behind a backend API.
+- Enable semantic retrieval through vector search.
+- Support independent frontend and backend deployments.
+- Follow secure configuration and Git version-control practices.
+
+---
+
+**Built with React, FastAPI, Supabase, Cloudflare Workers AI, and OpenRouter.**
+
+**GitHub:** https://github.com/RupeshO7a/creozen-genai-project
+
+**Live Application:** https://creozen-genai-project.vercel.app
