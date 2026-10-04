@@ -7,3 +7,4 @@ ollama
 supabase
 pypdf
 pydantic
+requests
